@@ -27,20 +27,22 @@ func Setup() error {
 
 func SetRoutes(app *fiber.App) {
 	app.Get("/users", func(c *fiber.Ctx) error {
-		db, err := storage.Connect(Config)
+		db, err := storage.Open(Config)
 		if err != nil {
 			log.Println("[GET] (/users) - Error occurred while getting users", err.Error())
 		}
 		var users []models.User
 		db.Find(&users)
+		storage.Close(db)
 		return c.JSON(users)
 	})
 
 	app.Post("/users", func(c *fiber.Ctx) error {
-		db, err := storage.Connect(Config)
+		db, err := storage.Open(Config)
 		if err != nil {
 			log.Println("[POST] (/users) - Error occurres while creating a user", err.Error())
 		}
+		storage.Close(db)
 		return models.HandleUserCreate(db, c)
 	})
 }
@@ -52,7 +54,7 @@ func main() {
 	}
 	log.Println("Configuration loaded")
 
-	db, err := storage.Connect(Config)
+	db, err := storage.Open(Config)
 	if err != nil {
 		os.Exit(2)
 	}
