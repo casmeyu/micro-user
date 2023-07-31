@@ -18,6 +18,7 @@ func Connect(cnf structs.Config) (*gorm.DB, error) {
 		cnf.Db.Name,
 	)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
 	if err != nil {
 		log.Println("[storage.database] (Connect) - Error occurred while connecting to database", err.Error())
 		return nil, err
