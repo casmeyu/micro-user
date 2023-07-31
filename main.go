@@ -42,7 +42,7 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			log.Println("[POST] (/users) - Error occurres while creating a user", err.Error())
 		}
-		storage.Close(db)
+
 		return models.HandleUserCreate(db, c)
 	})
 }

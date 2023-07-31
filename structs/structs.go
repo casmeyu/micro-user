@@ -22,3 +22,9 @@ type Config struct {
 	Db  DbConfig  `json:"db"`
 	Jwt JwtConfig `json:"jwt"`
 }
+
+type IError struct {
+	Field string
+	Tag   string
+	Value string
+}
