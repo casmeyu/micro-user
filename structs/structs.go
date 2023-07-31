@@ -1,24 +1,24 @@
 package structs
 
 type JwtConfig struct {
-	Secret     string
-	Expiration int
+	Secret     string `json:"-"`
+	Expiration int    `json:"expiration"`
 }
 
 type AppConfig struct {
-	Name string
-	Ip   string
+	Name string `json:"name"`
+	Ip   string `json:"ip"`
 }
 
 type DbConfig struct {
-	User     string
-	Password string
-	DbName   string
-	Ip       string
+	User     string `json:"username"`
+	Password string `json:"password"`
+	Name     string `json:"db"`
+	Ip       string `json:"ip"`
 }
 
 type Config struct {
-	App AppConfig
-	Db  DbConfig
-	Jwt JwtConfig
+	App AppConfig `json:"app"`
+	Db  DbConfig  `json:"db"`
+	Jwt JwtConfig `json:"jwt"`
 }

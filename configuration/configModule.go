@@ -31,7 +31,7 @@ func LoadConfig(cfg *structs.Config) error {
 	cfg.Db = structs.DbConfig{
 		User:     os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASS"),
-		DbName:   os.Getenv("DB_NAME"),
+		Name:     os.Getenv("DB_NAME"),
 		Ip:       os.Getenv("DB_IP"),
 	}
 
