@@ -7,17 +7,16 @@ import (
 	"github.com/casmeyu/micro-user/storage"
 	"github.com/casmeyu/micro-user/structs"
 	"github.com/casmeyu/micro-user/utils"
+	"github.com/casmeyu/micro-user/validators"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
-var Validator = validator.New()
-
 type User struct {
 	gorm.Model
 	Username       string    `json:"username" gorm:"unique;not null;size:50" validate:"required,min=3,max=12"`
-	Password       string    `json:"password" gorm:"not null" validate:"required"`
+	Password       string    `json:"password" gorm:"not null" validate:"required_with_all"`
 	RefreshToken   string    `json:"-"`
 	LastConnection time.Time `json:"lastConnection"`
 }
@@ -25,6 +24,10 @@ type User struct {
 func HandleUserCreate(db *gorm.DB, c *fiber.Ctx) error {
 	var err error
 	var errors []*structs.IError
+	var validate = validator.New()
+
+	// Register custom validation for UserCreation
+	validate.RegisterValidation("passwordRegex", validators.ValidatePasswordRegex)
 
 	user := new(User)
 	if err = c.BodyParser(user); err != nil {
@@ -32,7 +35,7 @@ func HandleUserCreate(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	user.LastConnection = time.Now()
-	err = Validator.Struct(user)
+	err = validate.Struct(user)
 	if err != nil {
 		utils.FormatValidationErrors(err, &errors)
 		return c.Status(fiber.StatusBadRequest).JSON(errors)
