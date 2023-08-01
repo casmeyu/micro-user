@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/casmeyu/micro-user/auth"
 	"github.com/casmeyu/micro-user/configuration"
 	"github.com/casmeyu/micro-user/models"
 	"github.com/casmeyu/micro-user/storage"
@@ -29,7 +30,7 @@ func SetRoutes(app *fiber.App) {
 	app.Get("/users", func(c *fiber.Ctx) error {
 		db, err := storage.Connect(Config)
 		if err != nil {
-			log.Println("[GET] (/users) - Error occurred while getting users", err.Error())
+			log.Println("[GET] (/users) - Error trying to connect to database", err.Error())
 		}
 		var users []models.User
 		db.Find(&users)
@@ -39,9 +40,18 @@ func SetRoutes(app *fiber.App) {
 	app.Post("/users", func(c *fiber.Ctx) error {
 		db, err := storage.Connect(Config)
 		if err != nil {
-			log.Println("[POST] (/users) - Error occurres while creating a user", err.Error())
+			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
 		return models.HandleUserCreate(db, c)
+	})
+
+	app.Post("/login", func(c *fiber.Ctx) error {
+		db, err := storage.Connect(Config)
+		if err != nil {
+			log.Println("[POST] (/login) - Error trying to connect to database", err.Error())
+		}
+
+		return auth.Login(db, c)
 	})
 }
 

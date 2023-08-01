@@ -22,3 +22,8 @@ type Config struct {
 	Db  DbConfig  `json:"db"`
 	Jwt JwtConfig `json:"jwt"`
 }
+
+type UserLogin struct {
+	Username string `json:"username"`
+	Password string `json:"-"`
+}
