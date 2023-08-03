@@ -14,19 +14,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type ServiceResponse struct {
-	Success bool
-	Result  interface{}
-	Err     string
-}
-
 var Validator = validator.New()
 
 func Login(db *gorm.DB, c *fiber.Ctx) error {
 	var err error
 	var errors []*structs.IError
 	var tx *gorm.DB
-	var res = ServiceResponse{
+	var res = structs.ServiceResponse{
 		Success: false,
 		Result:  nil,
 		Err:     "",
@@ -50,22 +44,9 @@ func Login(db *gorm.DB, c *fiber.Ctx) error {
 	tx = db.Model(&userService.User{}).Where("username=?", userLogin.Username).First(&dbUser)
 	if tx.Error != nil {
 		log.Println("[Auth] (Login) - Error occurred while trying to get user:", tx.Error.Error())
-		res = ServiceResponse{
-			Success: false,
-			Result:  nil,
-			Err:     fmt.Sprintf("User: %s", tx.Error.Error()),
-		}
+		res.Err = fmt.Sprintf("User: %s", tx.Error.Error())
 		return c.Status(501).JSON(res)
 	}
-	if dbUser.ID == 0 {
-		res = ServiceResponse{
-			Success: false,
-			Result:  nil,
-			Err:     "User was not found",
-		}
-		return c.Status(403).JSON(res)
-	}
-
 	// TODO: create util functions: hashUserPwd and compareUserPwd
 	hashPwd, err := bcrypt.GenerateFromPassword([]byte(userLogin.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -82,7 +63,6 @@ func Login(db *gorm.DB, c *fiber.Ctx) error {
 			log.Println("[Users] (HandleUserCreate) - Error occurred while parsing the user to Json", tx.Error.Error())
 			return c.Status(501).SendString("Error while loging in")
 		}
-
 		// WARNING: user password is being send in the response, remove it
 		return c.Status(fiber.StatusOK).JSON(dbUser)
 	}
