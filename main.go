@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/casmeyu/micro-user/auth"
 	"github.com/casmeyu/micro-user/configuration"
@@ -30,7 +31,10 @@ func Setup() error {
 }
 
 func SetRoutes(app *fiber.App) {
-	app.Get("/users", func(c *fiber.Ctx) error {
+	// Setup User Routes
+	userRoutes := app.Group("/users")
+
+	userRoutes.Get("/", func(c *fiber.Ctx) error {
 		db, err := storage.Connect(Config)
 		if err != nil {
 			log.Println("[GET] (/users) - Error trying to connect to database", err.Error())
@@ -40,7 +44,7 @@ func SetRoutes(app *fiber.App) {
 		return c.JSON(users)
 	})
 
-	app.Post("/users", func(c *fiber.Ctx) error {
+	userRoutes.Post("/", func(c *fiber.Ctx) error {
 		user := new(userService.User)
 		if err := c.BodyParser(user); err != nil {
 			return c.Status(503).Send([]byte(err.Error()))
@@ -49,14 +53,32 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
-		res := userService.HandleUserCreate(user, db)
+		res := userService.CreateUser(user, db)
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
 			return c.Status(res.Status).JSON(res.Err)
 		}
-
 	})
+
+	userRoutes.Get("/:id<int>", func(c *fiber.Ctx) error {
+		var err error
+		userId, err := strconv.Atoi(c.Params("id"))
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON("Invalid user id")
+		}
+		db, err := storage.Connect(Config)
+		if err != nil {
+			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
+		}
+		res := userService.GetById(userId, db)
+		if res.Success == true {
+			return c.Status(res.Status).JSON(res.Result)
+		} else {
+			return c.Status(res.Status).JSON(res.Err)
+		}
+	})
+	// END User Routes
 
 	app.Post("/login", func(c *fiber.Ctx) error {
 		var errors []*structs.IError

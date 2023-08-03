@@ -19,20 +19,20 @@ type User struct {
 	LastConnection time.Time `json:"lastConnection"`
 }
 
-func HandleUserCreate(user *User, db *gorm.DB) structs.ServiceResponse {
+func CreateUser(user *User, db *gorm.DB) structs.ServiceResponse {
 	var res = structs.ServiceResponse{}
 
 	user.LastConnection = time.Now()
 	hashPwd, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Println("[Users] (HandleUserCreate) - Error occurred while hashing user's password")
+		log.Println("[Users] (CreateUser) - Error occurred while hashing user's password")
 	}
 	user.Password = string(hashPwd)
 	// TODO: Add entity validations and set default last_connection to null in struct
 
 	tx := db.Create(user)
 	if tx.Error != nil {
-		log.Println("[Users] (HandleUserCreate) - Error occurred while writing user to the database", tx.Error.Error())
+		log.Println("[Users] (CreateUser) - Error occurred while writing user to the database", tx.Error.Error())
 		var dupErrMsg = fmt.Sprintf("Error 1062 (23000): Duplicate entry '%s' for key 'users.username'", user.Username)
 		if tx.Error.Error() == dupErrMsg {
 			res.Err = fmt.Sprintf("Username %s is already taken", user.Username)
@@ -46,5 +46,21 @@ func HandleUserCreate(user *User, db *gorm.DB) structs.ServiceResponse {
 	res.Success = true
 	res.Result = user
 	res.Status = fiber.StatusCreated
+	return res
+}
+
+func GetById(id int, db *gorm.DB) structs.ServiceResponse {
+	res := structs.ServiceResponse{}
+	var dbUser User
+	tx := db.Model(&User{}).Where("id=?", id).First(&dbUser)
+	if tx.Error != nil {
+		log.Println("[Auth] (Login) - Error occurred while trying to get user:", tx.Error.Error())
+		res.Err = "User does not exist"
+		res.Status = fiber.StatusNotFound
+		return res
+	}
+	res.Success = true
+	res.Status = fiber.StatusOK
+	res.Result = dbUser
 	return res
 }

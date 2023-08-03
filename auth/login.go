@@ -38,7 +38,7 @@ func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
 		dbUser.LastConnection = time.Now()
 		tx = db.Save(&dbUser)
 		if tx.Error != nil {
-			log.Println("[Users] (HandleUserCreate) - Error occurred while parsing the user to Json", tx.Error.Error())
+			log.Println("[Users] (CreateUser) - Error occurred while parsing the user to Json", tx.Error.Error())
 			res.Err = "Error while login in"
 			res.Status = fiber.StatusInternalServerError
 			return res
