@@ -29,6 +29,7 @@ type Config struct {
 // Services
 type ServiceResponse struct {
 	Success bool
+	Status  int
 	Result  interface{}
 	Err     string
 }
@@ -39,7 +40,6 @@ type UserLogin struct {
 }
 
 // END Services
-
 // General
 type IError struct {
 	Field string
