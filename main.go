@@ -41,11 +41,21 @@ func SetRoutes(app *fiber.App) {
 	})
 
 	app.Post("/users", func(c *fiber.Ctx) error {
+		user := new(userService.User)
+		if err := c.BodyParser(user); err != nil {
+			return c.Status(503).Send([]byte(err.Error()))
+		}
 		db, err := storage.Connect(Config)
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
-		return userService.HandleUserCreate(db, c)
+		res := userService.HandleUserCreate(user, db)
+		if res.Success == true {
+			return c.Status(res.Status).JSON(res.Result)
+		} else {
+			return c.Status(res.Status).JSON(res.Err)
+		}
+
 	})
 
 	app.Post("/login", func(c *fiber.Ctx) error {
