@@ -7,9 +7,9 @@ import (
 
 	"github.com/casmeyu/micro-user/auth"
 	"github.com/casmeyu/micro-user/configuration"
-	"github.com/casmeyu/micro-user/models"
 	"github.com/casmeyu/micro-user/storage"
 	"github.com/casmeyu/micro-user/structs"
+	"github.com/casmeyu/micro-user/userService"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -32,7 +32,7 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			log.Println("[GET] (/users) - Error trying to connect to database", err.Error())
 		}
-		var users []models.User
+		var users []userService.User
 		db.Find(&users)
 		return c.JSON(users)
 	})
@@ -42,7 +42,7 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
-		return models.HandleUserCreate(db, c)
+		return userService.HandleUserCreate(db, c)
 	})
 
 	app.Post("/login", func(c *fiber.Ctx) error {
@@ -67,7 +67,7 @@ func main() {
 		os.Exit(2)
 	}
 	fmt.Println("Db is connected!", &db)
-	storage.MakeMigration(Config, &models.User{})
+	storage.MakeMigration(Config, &userService.User{})
 
 	app := fiber.New()
 

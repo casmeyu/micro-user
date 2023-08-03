@@ -23,7 +23,13 @@ type Config struct {
 	Jwt JwtConfig `json:"jwt"`
 }
 
+type IError struct {
+	Field string
+	Tag   string
+	Value string
+}
+
 type UserLogin struct {
-	Username string `json:"username"`
-	Password string `json:"-"`
+	Username string `json:"username" validate:"required,min=1,max=50"`
+	Password string `json:"password" validate:"required,min=1"`
 }
