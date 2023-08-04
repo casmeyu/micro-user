@@ -35,12 +35,13 @@ func SetRoutes(app *fiber.App) {
 	userRoutes := app.Group("/users")
 
 	userRoutes.Get("/", func(c *fiber.Ctx) error {
-		db, err := storage.Connect(Config)
+		db, err := storage.Open(Config)
 		if err != nil {
 			log.Println("[GET] (/users) - Error trying to connect to database", err.Error())
 		}
 		var users []userService.User
 		db.Find(&users)
+		storage.Close(db)
 		return c.JSON(users)
 	})
 
@@ -49,7 +50,7 @@ func SetRoutes(app *fiber.App) {
 		if err := c.BodyParser(user); err != nil {
 			return c.Status(503).Send([]byte(err.Error()))
 		}
-		db, err := storage.Connect(Config)
+		db, err := storage.Open(Config)
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
@@ -67,7 +68,7 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON("Invalid user id")
 		}
-		db, err := storage.Connect(Config)
+		db, err := storage.Open(Config)
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
@@ -94,7 +95,7 @@ func SetRoutes(app *fiber.App) {
 			utils.FormatValidationErrors(err, &errors)
 			return c.Status(fiber.StatusBadRequest).JSON(errors)
 		}
-		db, err := storage.Connect(Config)
+		db, err := storage.Open(Config)
 		if err != nil {
 			log.Println("[POST] (/login) - Error trying to connect to database", err.Error())
 		}
@@ -115,7 +116,7 @@ func main() {
 	}
 	log.Println("Configuration loaded")
 
-	db, err := storage.Connect(Config)
+	db, err := storage.Open(Config)
 	if err != nil {
 		os.Exit(2)
 	}
