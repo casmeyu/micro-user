@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"log"
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
@@ -10,8 +11,11 @@ import (
 // RIGHT NOW IT DOES NOT GET CALLED
 func ValidatePasswordRegex(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
-	regex := `^[0-9]$` // THIS SHOULD BE IN A ENVIRONMENT VARIABLE
+	regex := `^.{3,}$` // THIS SHOULD BE IN A ENVIRONMENT VARIABLE
 
-	match, _ := regexp.MatchString(regex, password)
+	match, err := regexp.MatchString(regex, password)
+	if err != nil {
+		log.Println("Error occurred matching regex", err.Error())
+	}
 	return match
 }

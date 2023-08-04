@@ -12,13 +12,14 @@ import (
 	"github.com/casmeyu/micro-user/structs"
 	"github.com/casmeyu/micro-user/userService"
 	"github.com/casmeyu/micro-user/utils"
+	"github.com/casmeyu/micro-user/validators"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
 // Setting config as global variable
 var Config structs.Config
-var Validator = validator.New()
+var validate = validator.New()
 
 // Executes LoadConfig() function and sets up initial information for the backend app
 func Setup() error {
@@ -46,9 +47,17 @@ func SetRoutes(app *fiber.App) {
 	})
 
 	userRoutes.Post("/", func(c *fiber.Ctx) error {
+		var err error
+		var errors []*structs.IError
+
 		user := new(userService.User)
 		if err := c.BodyParser(user); err != nil {
 			return c.Status(503).Send([]byte(err.Error()))
+		}
+		err = validate.Struct(user)
+		if err != nil {
+			utils.FormatValidationErrors(err, &errors)
+			return c.Status(fiber.StatusBadRequest).JSON(errors)
 		}
 		db, err := storage.Open(Config)
 		if err != nil {
@@ -90,7 +99,7 @@ func SetRoutes(app *fiber.App) {
 			c.Status(503).SendString("Error while parsing body request")
 		}
 		// Validate userLogin request
-		err = Validator.Struct(userLogin)
+		err = validate.Struct(userLogin)
 		if err != nil {
 			utils.FormatValidationErrors(err, &errors)
 			return c.Status(fiber.StatusBadRequest).JSON(errors)
@@ -110,7 +119,7 @@ func SetRoutes(app *fiber.App) {
 }
 
 func main() {
-	fiber.New()
+	validate.RegisterValidation("passwordRegex", validators.ValidatePasswordRegex)
 	if err := Setup(); err != nil {
 		os.Exit(2)
 	}
