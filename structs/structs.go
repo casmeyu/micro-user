@@ -1,5 +1,7 @@
 package structs
 
+import "time"
+
 // Config
 type JwtConfig struct {
 	Secret     string `json:"-"`
@@ -37,6 +39,12 @@ type ServiceResponse struct {
 type UserLogin struct {
 	Username string `json:"username" validate:"required,min=1,max=50"`
 	Password string `json:"password" validate:"required,min=1"`
+}
+
+type PublicUser struct {
+	Id             uint      `json:"id"`
+	Username       string    `json:"username"`
+	LastConnection time.Time `json:"lastConnection"`
 }
 
 // END Services

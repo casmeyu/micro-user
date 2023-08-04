@@ -20,6 +20,7 @@ func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
 	var tx *gorm.DB
 	var res = structs.ServiceResponse{}
 	var dbUser userService.User
+	var resUser structs.PublicUser
 
 	tx = db.Model(&userService.User{}).Where("username=?", userLogin.Username).First(&dbUser)
 	if tx.Error != nil {
@@ -43,9 +44,14 @@ func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
 			res.Status = fiber.StatusInternalServerError
 			return res
 		}
-		// WARNING: user password is being send in the response, remove it
+
+		resUser = structs.PublicUser{
+			Id:             dbUser.ID,
+			Username:       dbUser.Username,
+			LastConnection: dbUser.LastConnection,
+		}
 		res.Success = true
-		res.Result = dbUser
+		res.Result = resUser
 		res.Status = fiber.StatusOK
 		return res
 	}

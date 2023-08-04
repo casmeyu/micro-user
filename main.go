@@ -40,10 +40,21 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			log.Println("[GET] (/users) - Error trying to connect to database", err.Error())
 		}
-		var users []userService.User
-		db.Find(&users)
+		var dbUsers []userService.User
+		var resUsers []structs.PublicUser
+		if tx := db.Find(&dbUsers); tx.Error != nil {
+			log.Println("[GET] (/users) - Error occurred while finding users", tx.Error.Error())
+			c.Status(501).JSON("Error while getting users")
+		}
+		for _, user := range dbUsers {
+			resUsers = append(resUsers, structs.PublicUser{
+				Id:             user.ID,
+				Username:       user.Username,
+				LastConnection: user.LastConnection,
+			})
+		}
 		storage.Close(db)
-		return c.JSON(users)
+		return c.Status(200).JSON(resUsers)
 	})
 
 	userRoutes.Post("/", func(c *fiber.Ctx) error {
@@ -63,7 +74,9 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
+
 		res := userService.CreateUser(user, db)
+		storage.Close(db)
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -81,7 +94,9 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
+
 		res := userService.GetById(userId, db)
+		storage.Close(db)
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -98,7 +113,7 @@ func SetRoutes(app *fiber.App) {
 			log.Println("[Auth] (Login) Error occurred while parsing request body", err.Error())
 			c.Status(503).SendString("Error while parsing body request")
 		}
-		// Validate userLogin request
+
 		err = validate.Struct(userLogin)
 		if err != nil {
 			utils.FormatValidationErrors(err, &errors)
@@ -110,6 +125,7 @@ func SetRoutes(app *fiber.App) {
 		}
 
 		res := auth.Login(userLogin, db)
+		storage.Close(db)
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {

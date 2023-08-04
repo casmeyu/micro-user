@@ -13,9 +13,9 @@ import (
 
 type User struct {
 	gorm.Model
-	Username       string    `json:"username" gorm:"unique;not null;size:50"`
+	Username       string    `json:"username" gorm:"unique;not null;size:50" validate:"max=50"`
 	Password       string    `json:"password" gorm:"not null" validate:"passwordRegex"`
-	RefreshToken   string    `json:"refreshToken"`
+	RefreshToken   string    `json:"refreshToken" gorm:"default:null"`
 	LastConnection time.Time `json:"lastConnection"`
 }
 
@@ -52,6 +52,7 @@ func CreateUser(user *User, db *gorm.DB) structs.ServiceResponse {
 func GetById(id int, db *gorm.DB) structs.ServiceResponse {
 	res := structs.ServiceResponse{}
 	var dbUser User
+
 	tx := db.Model(&User{}).Where("id=?", id).First(&dbUser)
 	if tx.Error != nil {
 		log.Println("[Auth] (Login) - Error occurred while trying to get user:", tx.Error.Error())
@@ -59,8 +60,14 @@ func GetById(id int, db *gorm.DB) structs.ServiceResponse {
 		res.Status = fiber.StatusNotFound
 		return res
 	}
+
+	resUser := structs.PublicUser{
+		Id:             dbUser.ID,
+		Username:       dbUser.Username,
+		LastConnection: dbUser.LastConnection,
+	}
 	res.Success = true
 	res.Status = fiber.StatusOK
-	res.Result = dbUser
+	res.Result = resUser
 	return res
 }
