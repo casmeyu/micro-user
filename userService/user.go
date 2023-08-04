@@ -14,8 +14,8 @@ import (
 type User struct {
 	gorm.Model
 	Username       string    `json:"username" gorm:"unique;not null;size:50"`
-	Password       string    `json:"-" gorm:"not null" validate:"passwordRegex"`
-	RefreshToken   string    `json:"-"`
+	Password       string    `json:"password" gorm:"not null" validate:"passwordRegex"`
+	RefreshToken   string    `json:"refreshToken"`
 	LastConnection time.Time `json:"lastConnection"`
 }
 
