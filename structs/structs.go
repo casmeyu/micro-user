@@ -29,6 +29,8 @@ type Config struct {
 // END Config
 
 // Services
+//
+//	General
 type ServiceResponse struct {
 	Success bool
 	Status  int
@@ -45,6 +47,12 @@ type PublicUser struct {
 	Id             uint      `json:"id"`
 	Username       string    `json:"username"`
 	LastConnection time.Time `json:"lastConnection"`
+}
+
+// Auth
+type LoginCredentials struct {
+	PublicUser
+	Jwt string
 }
 
 // END Services
