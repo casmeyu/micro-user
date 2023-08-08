@@ -3,14 +3,12 @@ package auth
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/casmeyu/micro-user/structs"
 	"github.com/casmeyu/micro-user/userService"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -18,6 +16,7 @@ import (
 var Validator = validator.New()
 
 func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
+	fmt.Println("AT LOGIN")
 	var err error
 	var tx *gorm.DB
 	var res = structs.ServiceResponse{}
@@ -42,11 +41,12 @@ func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
 
 		//Creating jwt
 		claimsMap := map[string]interface{}{
-			"sub": structs.PublicUser{
+			"data": structs.PublicUser{
 				Id:             dbUser.ID,
 				Username:       dbUser.Username,
 				LastConnection: dbUser.LastConnection,
 			},
+			"exp": time.Now().Add(time.Hour),
 		}
 
 		jwtToken, err := CreateJwtToken(claimsMap)
@@ -56,36 +56,8 @@ func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
 			res.Err = "Error while login in"
 			return res
 		}
-		/*
-		*
-		*
-		*
-		*
-		*
-		 */
-		// Decoding JWT Token
-		fmt.Println(("Decoding JWT TOKEN"))
-		claims := jwt.MapClaims{}
-		token, err := jwt.ParseWithClaims(jwtToken, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		})
-		fmt.Println(token)
-		// do something with decoded claims
-		userInfo := claims["sub"]
-		fmt.Println(userInfo)
+		// End JWT creation
 
-		for key, val := range claims {
-			fmt.Printf("Key: %v, value: %v\n", key, val)
-		}
-		//END DECODING
-		/*
-		*
-		*
-		*
-		*
-		 */
-
-		// End JWT CRATIOn
 		tx = db.Save(&dbUser)
 		if tx.Error != nil {
 			log.Println("[Users] (CreateUser) - Error occurred while parsing the user to Json", tx.Error.Error())

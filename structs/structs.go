@@ -14,8 +14,8 @@ type AppConfig struct {
 }
 
 type DbConfig struct {
-	User     string `json:"username"`
-	Password string `json:"password"`
+	User     string `json:"-"`
+	Password string `json:"-"`
 	Name     string `json:"db"`
 	Ip       string `json:"ip"`
 }
@@ -56,6 +56,7 @@ type LoginCredentials struct {
 }
 
 // END Services
+
 // General
 type IError struct {
 	Field string
