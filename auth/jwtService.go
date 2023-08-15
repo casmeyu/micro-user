@@ -11,7 +11,6 @@ import (
 )
 
 func CreateJwtToken(claims map[string]interface{}) (string, error) {
-	fmt.Println("CreateJwtToken")
 	token := jwt.New(jwt.GetSigningMethod("HS256"))
 	tokenClaims := token.Claims.(jwt.MapClaims)
 
