@@ -16,7 +16,6 @@ import (
 var Validator = validator.New()
 
 func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
-	fmt.Println("AT LOGIN")
 	var err error
 	var tx *gorm.DB
 	var res = structs.ServiceResponse{}
