@@ -26,14 +26,22 @@ func Login(userLogin *structs.UserLogin, db *gorm.DB) structs.ServiceResponse {
 	tx = db.Model(&userService.User{}).Where("username=?", userLogin.Username).First(&dbUser)
 	if tx.Error != nil {
 		log.Println("[Auth] (Login) - Error occurred while trying to get user:", tx.Error.Error())
-		res.Err = fmt.Sprintf("User: %s", tx.Error.Error())
-		res.Status = fiber.StatusInternalServerError
+		switch tx.Error.Error() {
+		case "record not found":
+			res.Err = fmt.Sprintf("Invalid username or password")
+			res.Status = fiber.StatusBadRequest
+			break
+		default:
+			res.Err = tx.Error.Error()
+			res.Status = fiber.StatusInternalServerError
+		}
+
 		return res
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(userLogin.Password))
 	if err != nil {
-		res.Err = "Wrong username or password"
+		res.Err = "Invalid username or password"
 		res.Status = fiber.StatusBadRequest
 		return res
 	} else {
