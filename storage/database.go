@@ -37,7 +37,6 @@ func Close(db *gorm.DB) error {
 }
 
 func MakeMigration(cnf structs.Config, entity interface{}) error {
-	fmt.Println("Making migration from storage funciton")
 	db, err := Open(cnf)
 	if err != nil {
 		return err
