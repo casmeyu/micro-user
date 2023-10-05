@@ -99,7 +99,7 @@ func SetRoutes(app *fiber.App) {
 	})
 	// END User Routes
 
-	// LogIn and Logout
+	app.Use("/login", middleware.IsPublic) // Setting login as a public route
 	app.Post("/login", func(c *fiber.Ctx) error {
 		var errors []*structs.IError
 		var err error
@@ -134,16 +134,17 @@ func SetRoutes(app *fiber.App) {
 		// Somehow invalidate JwtToken and RefreshToken
 		return nil
 	})
-	// END Login/Logout
 
-	app.Use("/private", middleware.JwtGuard)
-	// Test for "private" route (jwt middleware)
+	// Test for "private" route with JwtGuard middleware
 	app.Get("/private", func(c *fiber.Ctx) error {
 		fmt.Println("Running private route")
 		fmt.Println(c.Locals("user"))
 		// If JwtMiddlewareGuard passes then return route content
 		return nil
 	})
+
+	// Add App middleware to be run after specific route middleware
+	app.Use(middleware.JwtGuard)
 }
 
 func main() {
