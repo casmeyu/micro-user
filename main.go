@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 
 	"github.com/casmeyu/micro-user/auth"
 	"github.com/casmeyu/micro-user/configuration"
+	"github.com/casmeyu/micro-user/middleware"
 	"github.com/casmeyu/micro-user/storage"
 	"github.com/casmeyu/micro-user/structs"
 	"github.com/casmeyu/micro-user/userService"
@@ -19,8 +21,8 @@ import (
 
 // Setting config as global variable
 var Config structs.Config
-var validate = validator.New()
-var db *gorm.DB
+var Validate = validator.New()
+var Db *gorm.DB
 
 // Executes LoadConfig() function and sets up initial information for the backend app
 func Setup() error {
@@ -36,13 +38,9 @@ func SetRoutes(app *fiber.App) {
 	// Setup User Routes
 	userRoutes := app.Group("/users")
 	userRoutes.Get("/", func(c *fiber.Ctx) error {
-		// db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
-		// if err != nil {
-		// 	log.Println("[GET] (/users) - Error trying to connect to database", err.Error())
-		// }
 		var dbUsers []userService.User
 		var resUsers []structs.PublicUser
-		if tx := db.Find(&dbUsers); tx.Error != nil {
+		if tx := Db.Find(&dbUsers); tx.Error != nil {
 			log.Println("[GET] (/users) - Error occurred while finding users", tx.Error.Error())
 			c.Status(501).JSON("Error while getting users")
 		}
@@ -53,7 +51,7 @@ func SetRoutes(app *fiber.App) {
 				LastConnection: user.LastConnection,
 			})
 		}
-		storage.Close(db)
+		storage.Close(Db)
 		return c.Status(200).JSON(resUsers)
 	})
 
@@ -65,18 +63,18 @@ func SetRoutes(app *fiber.App) {
 		if err := c.BodyParser(user); err != nil {
 			return c.Status(503).Send([]byte(err.Error()))
 		}
-		err = validate.Struct(user)
+		err = Validate.Struct(user)
 		if err != nil {
 			utils.FormatValidationErrors(err, &errors)
 			return c.Status(fiber.StatusBadRequest).JSON(errors)
 		}
-		db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
+		Db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
 
-		res := userService.CreateUser(user, db)
-		storage.Close(db)
+		res := userService.CreateUser(user, Db)
+		storage.Close(Db)
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -90,13 +88,9 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON("Invalid user id")
 		}
-		// db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
-		// if err != nil {
-		// 	log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
-		// }
 
-		res := userService.GetById(userId, db)
-		storage.Close(db)
+		res := userService.GetById(userId, Db)
+		storage.Close(Db)
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -115,18 +109,18 @@ func SetRoutes(app *fiber.App) {
 			c.Status(503).SendString("Error while parsing body request")
 		}
 
-		err = validate.Struct(userLogin)
+		err = Validate.Struct(userLogin)
 		if err != nil {
 			utils.FormatValidationErrors(err, &errors)
 			return c.Status(fiber.StatusBadRequest).JSON(errors)
 		}
-		db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
+		Db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
 		if err != nil {
 			log.Println("[POST] (/login) - Error trying to connect to database", err.Error())
 		}
 
-		res := auth.Login(userLogin, db)
-		storage.Close(db)
+		res := auth.Login(userLogin, Db)
+		storage.Close(Db)
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -136,21 +130,24 @@ func SetRoutes(app *fiber.App) {
 
 	app.Post("/logout", func(c *fiber.Ctx) error {
 		// Get JwtToken
-		// Check JwtToken agains db.users
+		// Check JwtToken agains Db.users
 		// Somehow invalidate JwtToken and RefreshToken
 		return nil
 	})
 	// END Login/Logout
 
+	app.Use("/private", middleware.JwtGuard)
 	// Test for "private" route (jwt middleware)
 	app.Get("/private", func(c *fiber.Ctx) error {
+		fmt.Println("Running private route")
+		fmt.Println(c.Locals("user"))
 		// If JwtMiddlewareGuard passes then return route content
 		return nil
 	})
 }
 
 func main() {
-	validate.RegisterValidation("passwordRegex", validators.ValidatePasswordRegex)
+	Validate.RegisterValidation("passwordRegex", validators.ValidatePasswordRegex)
 	if err := Setup(); err != nil {
 		os.Exit(2)
 	}
@@ -162,8 +159,8 @@ func main() {
 	if err != nil {
 		os.Exit(2)
 	}
-	db = conn // Setting DB Connection for all the routes
-	log.Printf("Connected to %s database: %s\n", db.Name(), Config.Db.Name)
+	Db = conn // Setting DB Connection for all the routes
+	log.Printf("Connected to %s database: %s\n", Db.Name(), Config.Db.Name)
 	storage.MakeMigration(Config, &userService.User{})
 
 	app := fiber.New()
