@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 
 	"github.com/casmeyu/micro-user/auth"
 	"github.com/casmeyu/micro-user/configuration"
+	"github.com/casmeyu/micro-user/middleware"
 	"github.com/casmeyu/micro-user/storage"
 	"github.com/casmeyu/micro-user/structs"
 	"github.com/casmeyu/micro-user/userService"
@@ -19,14 +21,14 @@ import (
 
 // Setting config as global variable
 var Config structs.Config
-var validate = validator.New()
-var db *gorm.DB
+var Validate = validator.New()
+var Db *gorm.DB
 
 // Executes LoadConfig() function and sets up initial information for the backend app
 func Setup() error {
 	err := configuration.LoadConfig(&Config)
 	if err != nil {
-		log.Println("Error while setting up config", err.Error())
+		log.Println("[Main] (Setup) - Error while setting up config", err.Error())
 		return err
 	}
 	return nil
@@ -36,13 +38,9 @@ func SetRoutes(app *fiber.App) {
 	// Setup User Routes
 	userRoutes := app.Group("/users")
 	userRoutes.Get("/", func(c *fiber.Ctx) error {
-		// db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
-		// if err != nil {
-		// 	log.Println("[GET] (/users) - Error trying to connect to database", err.Error())
-		// }
 		var dbUsers []userService.User
 		var resUsers []structs.PublicUser
-		if tx := db.Find(&dbUsers); tx.Error != nil {
+		if tx := Db.Find(&dbUsers); tx.Error != nil {
 			log.Println("[GET] (/users) - Error occurred while finding users", tx.Error.Error())
 			c.Status(501).JSON("Error while getting users")
 		}
@@ -53,7 +51,7 @@ func SetRoutes(app *fiber.App) {
 				LastConnection: user.LastConnection,
 			})
 		}
-		storage.Close(db)
+
 		return c.Status(200).JSON(resUsers)
 	})
 
@@ -65,18 +63,18 @@ func SetRoutes(app *fiber.App) {
 		if err := c.BodyParser(user); err != nil {
 			return c.Status(503).Send([]byte(err.Error()))
 		}
-		err = validate.Struct(user)
+		err = Validate.Struct(user)
 		if err != nil {
 			utils.FormatValidationErrors(err, &errors)
 			return c.Status(fiber.StatusBadRequest).JSON(errors)
 		}
-		db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
+		Db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
 		if err != nil {
 			log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
 		}
 
-		res := userService.CreateUser(user, db)
-		storage.Close(db)
+		res := userService.CreateUser(user, Db)
+
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -90,13 +88,9 @@ func SetRoutes(app *fiber.App) {
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON("Invalid user id")
 		}
-		// db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
-		// if err != nil {
-		// 	log.Println("[POST] (/users) - Error trying to connect to database", err.Error())
-		// }
 
-		res := userService.GetById(userId, db)
-		storage.Close(db)
+		res := userService.GetById(userId, Db)
+
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -105,7 +99,7 @@ func SetRoutes(app *fiber.App) {
 	})
 	// END User Routes
 
-	// LogIn and Logout
+	app.Use("/login", middleware.IsPublic) // Setting login as a public route
 	app.Post("/login", func(c *fiber.Ctx) error {
 		var errors []*structs.IError
 		var err error
@@ -115,19 +109,19 @@ func SetRoutes(app *fiber.App) {
 			c.Status(503).SendString("Error while parsing body request")
 		}
 
-		err = validate.Struct(userLogin)
+		err = Validate.Struct(userLogin)
 		if err != nil {
 			utils.FormatValidationErrors(err, &errors)
 			return c.Status(fiber.StatusBadRequest).JSON(errors)
 		}
-		db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
+		Db, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
 		if err != nil {
 			log.Println("[POST] (/login) - Error trying to connect to database", err.Error())
 		}
 
-		res := auth.Login(userLogin, db)
-		storage.Close(db)
-		if res.Success == true {
+		res := auth.Login(userLogin, Db)
+
+		if res.Success {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
 			return c.Status(res.Status).JSON(res.Err)
@@ -136,39 +130,39 @@ func SetRoutes(app *fiber.App) {
 
 	app.Post("/logout", func(c *fiber.Ctx) error {
 		// Get JwtToken
-		// Check JwtToken agains db.users
+		// Check JwtToken agains Db.users
 		// Somehow invalidate JwtToken and RefreshToken
 		return nil
 	})
-	// END Login/Logout
 
-	// Test for "private" route (jwt middleware)
+	// Test for "private" route with JwtGuard middleware
 	app.Get("/private", func(c *fiber.Ctx) error {
-		// If JwtMiddlewareGuard passes then return route content
+		fmt.Println("Running private route")
+		fmt.Println(c.Locals("user"))
 		return nil
 	})
+
+	// Add App middleware to be run after specific route middleware
+	app.Use(middleware.JwtGuard)
 }
 
 func main() {
-	validate.RegisterValidation("passwordRegex", validators.ValidatePasswordRegex)
+	Validate.RegisterValidation("passwordRegex", validators.ValidatePasswordRegex)
 	if err := Setup(); err != nil {
 		os.Exit(2)
 	}
 	log.Println("Configuration loaded")
 
-	// Should I use a SINGLE Database Connection for the service?
-	// Or each Route should connect and disconnect from the DB each time they are called???
+	storage.MakeMigration(Config, &userService.User{})
+
+	app := fiber.New()
+	SetRoutes(app)
+
 	conn, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
 	if err != nil {
 		os.Exit(2)
 	}
-	db = conn // Setting DB Connection for all the routes
-	log.Printf("Connected to %s database: %s\n", db.Name(), Config.Db.Name)
-	storage.MakeMigration(Config, &userService.User{})
-
-	app := fiber.New()
-
-	SetRoutes(app)
-
+	Db = conn // Setting DB Connection for all the routes
+	log.Printf("Connected to %s database: %s\n", Db.Name(), Config.Db.Name)
 	app.Listen(":3000")
 }

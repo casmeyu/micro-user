@@ -47,6 +47,7 @@ func MakeMigration(cnf structs.Config, entity interface{}) error {
 		log.Println("[storage.database] (MakeMigration) - Error occurred while making a migration", err.Error())
 		return err
 	}
-	log.Println("Migration succesful")
+	log.Println("[Database] (MakeMigration) - Migration succesful")
+	Close(db)
 	return nil
 }

@@ -23,6 +23,7 @@ func LoadConfig(cfg *structs.Config) error {
 		return err
 	}
 
+	// Should I use LoadEnv to check existance of ENV VARIABLES ?
 	cfg.App = structs.AppConfig{
 		Name: os.Getenv("APP_NAME"),
 		Ip:   os.Getenv("APP_IP"),

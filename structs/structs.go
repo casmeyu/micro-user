@@ -29,8 +29,6 @@ type Config struct {
 // END Config
 
 // Services
-//
-//	General
 type ServiceResponse struct {
 	Success bool
 	Status  int
@@ -38,6 +36,7 @@ type ServiceResponse struct {
 	Err     string
 }
 
+// UserService
 type UserLogin struct {
 	Username string `json:"username" validate:"required,min=1,max=50"`
 	Password string `json:"password" validate:"required,min=1"`
@@ -49,7 +48,7 @@ type PublicUser struct {
 	LastConnection time.Time `json:"lastConnection"`
 }
 
-// Auth
+// AuthService
 type LoginCredentials struct {
 	PublicUser
 	Jwt string
@@ -57,11 +56,11 @@ type LoginCredentials struct {
 
 // END Services
 
-// General
+// Validation Errors
 type IError struct {
 	Field string
 	Tag   string
 	Value string
 }
 
-// END General
+// END Validation Errors

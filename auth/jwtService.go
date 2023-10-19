@@ -21,9 +21,9 @@ func CreateJwtToken(claims map[string]interface{}) (string, error) {
 	exp, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION"))
 	if err != nil {
 		log.Println("[Auth] (CreateJwtToken) - Error occurred while getting Jwt Expiration ENV", err.Error())
-		tokenClaims["exp"] = time.Now().Add(time.Hour)
+		tokenClaims["exp"] = time.Now().Add(time.Hour).Unix()
 	} else {
-		tokenClaims["exp"] = time.Now().Add(time.Second * time.Duration(exp))
+		tokenClaims["exp"] = time.Now().Add(time.Second * time.Duration(exp)).Unix()
 	}
 
 	s, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
@@ -41,7 +41,6 @@ func GetTokenData(tokenString string) (map[string]interface{}, error) {
 		}
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
