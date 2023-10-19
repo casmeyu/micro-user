@@ -28,7 +28,7 @@ var Db *gorm.DB
 func Setup() error {
 	err := configuration.LoadConfig(&Config)
 	if err != nil {
-		log.Println("Error while setting up config", err.Error())
+		log.Println("[Main] (Setup) - Error while setting up config", err.Error())
 		return err
 	}
 	return nil
