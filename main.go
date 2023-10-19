@@ -51,7 +51,7 @@ func SetRoutes(app *fiber.App) {
 				LastConnection: user.LastConnection,
 			})
 		}
-		storage.Close(Db)
+
 		return c.Status(200).JSON(resUsers)
 	})
 
@@ -74,7 +74,7 @@ func SetRoutes(app *fiber.App) {
 		}
 
 		res := userService.CreateUser(user, Db)
-		storage.Close(Db)
+
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -90,7 +90,7 @@ func SetRoutes(app *fiber.App) {
 		}
 
 		res := userService.GetById(userId, Db)
-		storage.Close(Db)
+
 		if res.Success == true {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
@@ -120,8 +120,8 @@ func SetRoutes(app *fiber.App) {
 		}
 
 		res := auth.Login(userLogin, Db)
-		storage.Close(Db)
-		if res.Success == true {
+
+		if res.Success {
 			return c.Status(res.Status).JSON(res.Result)
 		} else {
 			return c.Status(res.Status).JSON(res.Err)
@@ -152,19 +152,16 @@ func main() {
 	}
 	log.Println("Configuration loaded")
 
-	// Should I use a SINGLE Database Connection for the service?
-	// Or each Route should connect and disconnect from the DB each time they are called???
+	storage.MakeMigration(Config, &userService.User{})
+
+	app := fiber.New()
+	SetRoutes(app)
+
 	conn, err := storage.Open(Config) // Pass only Config.Db as it is more clean and efficient
 	if err != nil {
 		os.Exit(2)
 	}
 	Db = conn // Setting DB Connection for all the routes
 	log.Printf("Connected to %s database: %s\n", Db.Name(), Config.Db.Name)
-	storage.MakeMigration(Config, &userService.User{})
-
-	app := fiber.New()
-
-	SetRoutes(app)
-
 	app.Listen(":3000")
 }

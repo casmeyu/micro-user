@@ -48,5 +48,6 @@ func MakeMigration(cnf structs.Config, entity interface{}) error {
 		return err
 	}
 	log.Println("Migration succesful")
+	Close(db)
 	return nil
 }
