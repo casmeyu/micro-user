@@ -34,7 +34,6 @@ func CreateJwtToken(claims map[string]interface{}) (string, error) {
 }
 
 func GetTokenData(tokenString string) (map[string]interface{}, error) {
-	fmt.Println("Get Token data from", tokenString)
 	var data map[string]interface{}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -42,7 +41,6 @@ func GetTokenData(tokenString string) (map[string]interface{}, error) {
 		}
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
-	fmt.Println(token)
 	if err != nil {
 		return nil, err
 	}

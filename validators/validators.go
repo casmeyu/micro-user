@@ -12,13 +12,13 @@ import (
 func ValidatePasswordRegex(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
 	regex, exist := os.LookupEnv("USER_PASSWORD_REGEX")
-	if exist == false {
+	if !exist {
 		regex = "^.{3,}$"
 	} // THIS SHOULD BE IN A ENVIRONMENT VARIABLE
 
 	match, err := regexp.MatchString(regex, password)
 	if err != nil {
-		log.Println("Error occurred matching regex", err.Error())
+		log.Println("[Validator] (ValidatePasswordRegex) - Error occurred matching regex", err.Error())
 	}
 	return match
 }
