@@ -141,7 +141,6 @@ func SetRoutes(app *fiber.App) {
 	app.Get("/private", func(c *fiber.Ctx) error {
 		fmt.Println("Running private route")
 		fmt.Println(c.Locals("user"))
-		// If JwtMiddlewareGuard passes then return route content
 		return nil
 	})
 }
